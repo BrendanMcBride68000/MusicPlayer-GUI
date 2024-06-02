@@ -5,6 +5,7 @@
 import pygame
 import tkinter as tk
 from tkinter import filedialog, messagebox
+from mutagen import File
 
 # Initialize Pygame mixer
 pygame.mixer.init()
@@ -18,6 +19,8 @@ def load_music_file():
     if filepath:
         try:
             pygame.mixer.music.load(filepath)
+            current_file = filepath
+            display_metadata(filepath)
             messagebox.showinfo("File Loaded", "Music file loaded successfully!")
         except pygame.error as e:
             messagebox.showerror("Error", f"Could not load music file: {e}")
@@ -44,9 +47,26 @@ def pause_music_file():
         pause_button.config(text="Resume")
     is_paused = not is_paused
 
+def display_metadata(filepath):
+    # Displays the metadata of the file
+    try:
+        audio = File(filepath)
+        metadata = {
+            "Title": audio.get("TIT2", "Unknown Title"),
+            "Artist": audio.get("TPE1", "Unknown Artist"),
+            "Album": audio.get("TALB", "Unknown Album"),
+            "Year": audio.get("TDRC", "Unknown Year"),
+            "Genre": audio.get("TCON", "Unknown Genre")
+        }
+        filename_label.config(text=f"File: {filepath.split('/')[-1]}")
+        metadata_label.config(text="\n".join(f"{key}: {value}" for key, value in metadata.items()))
+    except Exception as e:
+        filename_label.config(text="File: Unknown")
+        metadata_label.config(text=f"Could not retrieve metadata: {e}")
+        
 def create_gui():
     # Create the GUI using tkinter.
-    global pause_button
+    global pause_button, filename_label, metadata_label
     
     root = tk.Tk()
     root.title("Music Player")
@@ -62,6 +82,12 @@ def create_gui():
 
     stop_button = tk.Button(root, text="Stop", command=stop_music_file)
     stop_button.pack(pady=5)
+
+    filename_label = tk.Label(root, text="File: None")
+    filename_label.pack(pady=5)
+
+    metadata_label = tk.Label(root, text="Metadata: None")
+    metadata_label.pack(pady=5)
 
     root.mainloop()
 
