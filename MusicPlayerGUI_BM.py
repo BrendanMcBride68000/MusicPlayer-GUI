@@ -1,6 +1,6 @@
 # MusicPlayerGUI_BM.py by Brendan McBride
 #
-# Currently supports .mod, .mp3, .wav, .ogg, .flac files
+# Currently supports .mod, .mp3, .wav, .ogg, .flac, .s3m, .umx, .it, .xm files
 
 import pygame
 import tkinter as tk
@@ -14,7 +14,7 @@ is_paused = False
 
 def load_music_file():
     # Load a music file using a file dialog.
-    filepath = filedialog.askopenfilename(filetypes=[("Music files(*.mod *.mp3 *.wav *.ogg *.flac)", "*.mod *.mp3 *.wav *.ogg *.flac")])
+    filepath = filedialog.askopenfilename(filetypes=[("Music files(*.mod *.mp3 *.wav *.ogg *.flac *.s3m *.umx *.it *.xm)", "*.mod *.mp3 *.wav *.ogg *.flac *.s3m *.umx *.it *.xm")])
     if filepath:
         try:
             pygame.mixer.music.load(filepath)
@@ -51,7 +51,7 @@ def create_gui():
     root = tk.Tk()
     root.title("Music Player")
 
-    load_button = tk.Button(root, text="Load Music File (*.mod *.mp3 *.wav *.ogg *.flac)", command=load_music_file)
+    load_button = tk.Button(root, text="Load Music File (*.mod *.mp3 *.wav *.ogg *.flac *.s3m *.umx *.it *.xm)", command=load_music_file)
     load_button.pack(pady=10)
 
     play_button = tk.Button(root, text="Play", command=play_music_file)
