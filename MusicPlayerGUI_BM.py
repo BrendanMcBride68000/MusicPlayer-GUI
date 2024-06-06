@@ -1,7 +1,9 @@
-# MusicPlayerGUI_BM.py by Brendan McBride
-#
-# Currently supports .mod, .mp3, .wav, .ogg, .flac, .s3m, .umx, .it, .xm files
-
+#############################################################################
+# Filename    : Music_Player.py
+# Description : A simple music player to load, play, pause, stop, and display metadata for various music files
+# Author      : Brendan McBride
+# Date        : 2024/06/06
+########################################################################
 import pygame
 import tkinter as tk
 from tkinter import filedialog, messagebox
