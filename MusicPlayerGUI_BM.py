@@ -27,7 +27,7 @@ def load_music_file():
             current_file = filepath
             display_metadata(filepath)
             total_length = get_music_length(filepath)
-            messagebox.showinfo("File Loaded", "Music file loaded successfully!")
+            #messagebox.showinfo("File Loaded", "Music file loaded successfully!")
         except pygame.error as e:
             messagebox.showerror("Error", f"Could not load music file: {e}")
 
