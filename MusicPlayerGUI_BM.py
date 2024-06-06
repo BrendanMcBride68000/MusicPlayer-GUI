@@ -66,13 +66,22 @@ def display_metadata(filepath):
     # Displays the metadata of the file
     try:
         audio = File(filepath)
-        metadata = {
-            "Title": audio.get("TIT2", "Unknown Title"),
-            "Artist": audio.get("TPE1", "Unknown Artist"),
-            "Album": audio.get("TALB", "Unknown Album"),
-            "Year": audio.get("TDRC", "Unknown Year"),
-            "Genre": audio.get("TCON", "Unknown Genre")
-        }
+        if audio:
+            metadata = {
+                "Title": audio.get("TIT2", audio.get("title", "Unknown Title")),
+                "Artist": audio.get("TPE1", audio.get("artist", "Unknown Artist")),
+                "Album": audio.get("TALB", audio.get("album", "Unknown Album")),
+                "Year": audio.get("TDRC", audio.get("date", "Unknown Year")),
+                "Genre": audio.get("TCON", audio.get("genre", "Unknown Genre"))
+            }
+        else:
+            metadata = {
+                "Title": "Unknown Title",
+                "Artist": "Unknown Artist",
+                "Album": "Unknown Album",
+                "Year": "Unknown Year",
+                "Genre": "Unknown Genre"
+            }
         filename_label.config(text=f"File: {filepath.split('/')[-1]}")
         metadata_label.config(text="\n".join(f"{key}: {value}" for key, value in metadata.items()))
     except Exception as e:
