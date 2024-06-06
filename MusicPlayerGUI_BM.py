@@ -14,8 +14,11 @@ pygame.mixer.init()
 
 # Flag to track if the music is paused
 is_paused = False
+current_file = None
+total_length = 0
 
 def load_music_file():
+    global current_file, total_length
     # Load a music file using a file dialog.
     filepath = filedialog.askopenfilename(filetypes=[("Music files(*.mod *.mp3 *.wav *.ogg *.flac *.s3m *.umx *.it *.xm)", "*.mod *.mp3 *.wav *.ogg *.flac *.s3m *.umx *.it *.xm"), ("All files", "*.*")])
     if filepath:
@@ -23,31 +26,41 @@ def load_music_file():
             pygame.mixer.music.load(filepath)
             current_file = filepath
             display_metadata(filepath)
+            total_length = get_music_length(filepath)
             messagebox.showinfo("File Loaded", "Music file loaded successfully!")
         except pygame.error as e:
             messagebox.showerror("Error", f"Could not load music file: {e}")
 
 def play_music_file():
+    global is_paused
     # Play the loaded music file.
     try:
         pygame.mixer.music.play()
+        is_paused = False
+        update_time_remaining()
     except pygame.error as e:
         messagebox.showerror("Error", f"Could not play music file: {e}")
 
 def stop_music_file():
+    global is_paused
     # Stop the playback of the music file.
     pygame.mixer.music.stop()
+    is_paused = False
+    time_remaining_label.config(text="Time Remaining: 00:00")
 
 def pause_music_file():
+    global is_paused
     # Pause or unpause the playback of the music file.
     global is_paused
     if is_paused:
         pygame.mixer.music.unpause()
         pause_button.config(text="Pause")
+        is_paused = False
+        update_time_remaining()
     else:
         pygame.mixer.music.pause()
         pause_button.config(text="Resume")
-    is_paused = not is_paused
+        is_paused = True
 
 def display_metadata(filepath):
     # Displays the metadata of the file
@@ -65,10 +78,22 @@ def display_metadata(filepath):
     except Exception as e:
         filename_label.config(text="File: Unknown")
         metadata_label.config(text=f"Could not retrieve metadata: {e}")
+
+def get_music_length(filepath):
+    audio = File(filepath)
+    return audio.info.length
+
+def update_time_remaining():
+    if pygame.mixer.music.get_busy() and not is_paused:
+        current_pos = pygame.mixer.music.get_pos() / 1000  # get_pos() returns time in milliseconds
+        remaining_time = int(total_length - current_pos)
+        mins, secs = divmod(remaining_time, 60)
+        time_remaining_label.config(text=f"Time Remaining: {mins:02}:{secs:02}")
+        root.after(1000, update_time_remaining)
         
 def create_gui():
     # Create the GUI using tkinter.
-    global pause_button, filename_label, metadata_label
+    global pause_button, filename_label, metadata_label, time_remaining_label, root
     
     root = tk.Tk()
     root.title("Music Player")
@@ -90,6 +115,9 @@ def create_gui():
 
     metadata_label = tk.Label(root, text="Metadata: None")
     metadata_label.pack(pady=5)
+
+    time_remaining_label = tk.Label(root, text="Time Remaining: 00:00")
+    time_remaining_label.pack(pady=5)
 
     root.mainloop()
 
