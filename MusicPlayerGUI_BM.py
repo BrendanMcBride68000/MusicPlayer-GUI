@@ -62,6 +62,11 @@ def pause_music_file():
         pause_button.config(text="Resume")
         is_paused = True
 
+def set_volume(val):
+    # Volume slider
+    volume = int(val) / 100
+    pygame.mixer.music.set_volume(volume)
+
 def display_metadata(filepath):
     # Displays the metadata of the file
     try:
@@ -119,6 +124,10 @@ def create_gui():
     stop_button = tk.Button(root, text="Stop", command=stop_music_file)
     stop_button.pack(pady=5)
 
+    volume_slider = tk.Scale(root, from_=0, to=100, orient=tk.HORIZONTAL, label="Volume", command=set_volume)
+    volume_slider.set(100)  # Set initial volume to 100%
+    volume_slider.pack(pady=5)
+    
     filename_label = tk.Label(root, text="File: None")
     filename_label.pack(pady=5)
 
