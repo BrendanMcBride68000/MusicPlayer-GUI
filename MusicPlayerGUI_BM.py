@@ -160,7 +160,7 @@ class MyServer(BaseHTTPRequestHandler):
            <h1>Welcome to Brendan's exciting Music Player!!!</h1>
            <form action="/" method="POST">
                <input type="submit" name="submit" value="Play">
-               <input type="submit" name="submit" value="Pause/Resume">
+               <input type="submit" name="submit" value="Pause">
                <input type="submit" name="submit" value="Stop">
            </form>
            </body>
