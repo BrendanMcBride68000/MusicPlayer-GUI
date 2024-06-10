@@ -8,6 +8,8 @@ import pygame
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from mutagen import File
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import threading
 
 # Initialize Pygame mixer
 pygame.mixer.init()
@@ -139,5 +141,61 @@ def create_gui():
 
     root.mainloop()
 
+class MyServer(BaseHTTPRequestHandler):
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+
+    def _redirect(self, path):
+        self.send_response(303)
+        self.send_header('Content-type', 'text/html')
+        self.send_header('Location', path)
+        self.end_headers()
+
+    def do_GET(self):
+        html = '''
+           <html>
+           <body style="width:960px; margin: 20px auto;">
+           <h1>Welcome to Brendan's exciting Music Player!!!</h1>
+           <form action="/" method="POST">
+               <input type="submit" name="submit" value="Play">
+               <input type="submit" name="submit" value="Pause/Resume">
+               <input type="submit" name="submit" value="Stop">
+           </form>
+           </body>
+           </html>
+        '''
+        self.do_HEAD()
+        self.wfile.write(html.encode("utf-8"))
+
+    def do_POST(self):
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length).decode("utf-8")
+        post_data = post_data.split("=")[1]
+
+        if post_data == 'Play':
+            play_music_file()
+        elif post_data == 'Pause':
+            pause_music_file()
+        elif post_data == 'Stop':
+            stop_music_file()
+
+        self._redirect('/')
+
+def start_http_server():
+    server_address = (host_name, host_port)
+    httpd = HTTPServer(server_address, MyServer)
+    httpd.serve_forever()
+
 if __name__ == "__main__":
+    host_name = 'x.x.x.x'  # Your IPv4 Address goes here
+    host_port = 3000
+
+    # Start HTTP server in a separate thread
+    server_thread = threading.Thread(target=start_http_server)
+    server_thread.daemon = True
+    server_thread.start()
+
+    # Create the GUI
     create_gui()
