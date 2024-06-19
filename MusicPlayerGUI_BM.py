@@ -10,14 +10,111 @@ from tkinter import filedialog, messagebox
 from mutagen import File
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
+import platform
+import time
 
 # Initialize Pygame mixer
 pygame.mixer.init()
+
+# Check if running on Raspberry Pi
+is_raspberry_pi = platform.system() == 'Linux'
+
+if is_raspberry_pi:
+    import RPi.GPIO as GPIO
+    GPIO.setwarnings(False)
+    LSBFIRST = 1
+    MSBFIRST = 2
+    dataPin = 11
+    latchPin = 13
+    clockPin = 15
+
+    redPin = 16
+    yellowPin = 18
+    greenPin = 22
+
+    def gpio_setup():
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setup(dataPin, GPIO.OUT)
+        GPIO.setup(latchPin, GPIO.OUT)
+        GPIO.setup(clockPin, GPIO.OUT)
+        GPIO.setup(redPin, GPIO.OUT)
+        GPIO.setup(yellowPin, GPIO.OUT)
+        GPIO.setup(greenPin, GPIO.OUT)
+
+    def shiftOut(dPin, cPin, order, val):
+        for i in range(0, 8):
+            GPIO.output(cPin, GPIO.LOW)
+            if order == LSBFIRST:
+                GPIO.output(dPin, (0x01 & (val >> i) == 0x01) and GPIO.HIGH or GPIO.LOW)
+            elif order == MSBFIRST:
+                GPIO.output(dPin, (0x80 & (val << i) == 0x80) and GPIO.HIGH or GPIO.LOW)
+            GPIO.output(cPin, GPIO.HIGH)
+
+    def led_loop():
+        delay_time = 0.05
+        while led_running:
+            x = 0x01
+            for i in range(0, 8):
+                if not led_running:
+                    break
+                GPIO.output(latchPin, GPIO.LOW)
+                shiftOut(dataPin, clockPin, LSBFIRST, x)
+                GPIO.output(latchPin, GPIO.HIGH)
+                x <<= 1
+                time.sleep(delay_time)
+            x = 0x80
+            for i in range(0, 8):
+                if not led_running:
+                    break
+                GPIO.output(latchPin, GPIO.LOW)
+                shiftOut(dataPin, clockPin, LSBFIRST, x)
+                GPIO.output(latchPin, GPIO.HIGH)
+                x >>= 1
+                time.sleep(delay_time)
+        # Turn off all LEDs when stopping
+        GPIO.output(latchPin, GPIO.LOW)
+        shiftOut(dataPin, clockPin, LSBFIRST, 0x00)
+        GPIO.output(latchPin, GPIO.HIGH)
+
+    def set_led_state(red, yellow, green):
+        GPIO.output(redPin, red)
+        GPIO.output(yellowPin, yellow)
+        GPIO.output(greenPin, green)
+
+else:
+    def gpio_setup():
+        pass  # No-op for non-Raspberry Pi systems
+
+    def led_loop():
+        pass  # No-op for non-Raspberry Pi systems
+
+    def set_led_state(red, yellow, green):
+        pass  # No-op for non-Raspberry Pi systems
+
+    # Define GPIO.LOW and GPIO.HIGH for non-Raspberry Pi systems
+    class GPIO:
+        LOW = False
+        HIGH = True
+
+def start_led_loop():
+    global led_running, led_thread
+    led_running = True
+    led_thread = threading.Thread(target=led_loop)
+    led_thread.start()
+
+def stop_led_loop():
+    global led_running, led_thread
+    led_running = False
+    if led_thread:
+        led_thread.join()
+        led_thread = None
 
 # Flag to track if the music is paused
 is_paused = False
 current_file = None
 total_length = 0
+led_running = False
+led_thread = None
 
 def load_music_file():
     global current_file, total_length
@@ -39,6 +136,8 @@ def play_music_file():
     try:
         pygame.mixer.music.play()
         is_paused = False
+        start_led_loop()
+        set_led_state(GPIO.LOW, GPIO.LOW, GPIO.HIGH)  # Green on, Red and Yellow off
         update_time_remaining()
     except pygame.error as e:
         messagebox.showerror("Error", f"Could not play music file: {e}")
@@ -48,21 +147,26 @@ def stop_music_file():
     # Stop the playback of the music file.
     pygame.mixer.music.stop()
     is_paused = False
+    stop_led_loop()
+    set_led_state(GPIO.HIGH, GPIO.LOW, GPIO.LOW)  # Red on, Yellow and Green off
     time_remaining_label.config(text="Time Remaining: 00:00")
 
 def pause_music_file():
     global is_paused
     # Pause or unpause the playback of the music file.
-    global is_paused
     if is_paused:
         pygame.mixer.music.unpause()
         pause_button.config(text="Pause")
         is_paused = False
+        start_led_loop()
+        set_led_state(GPIO.LOW, GPIO.LOW, GPIO.HIGH)  # Green on, Red and Yellow off
         update_time_remaining()
     else:
         pygame.mixer.music.pause()
         pause_button.config(text="Resume")
         is_paused = True
+        stop_led_loop()
+        set_led_state(GPIO.LOW, GPIO.HIGH, GPIO.LOW)  # Yellow on, Red and Green off
 
 def set_volume(val):
     # Volume slider
