@@ -216,6 +216,9 @@ def update_time_remaining():
         time_remaining_label.config(text=f"Time Remaining: {mins:02}:{secs:02}")
         root.after(1000, update_time_remaining)
         
+def button_callback(channel):
+    pause_music_file()
+
 def create_gui():
     # Create the GUI using tkinter.
     global pause_button, filename_label, metadata_label, time_remaining_label, root
