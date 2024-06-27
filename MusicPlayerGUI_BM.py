@@ -31,6 +31,7 @@ if is_raspberry_pi:
     redPin = 16
     yellowPin = 18
     greenPin = 22
+    buttonPin = 29
 
     def gpio_setup():
         GPIO.setmode(GPIO.BOARD)
@@ -40,6 +41,10 @@ if is_raspberry_pi:
         GPIO.setup(redPin, GPIO.OUT)
         GPIO.setup(yellowPin, GPIO.OUT)
         GPIO.setup(greenPin, GPIO.OUT)
+        GPIO.setup(buttonPin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+        # Add event detection for the button press
+        GPIO.add_event_detect(buttonPin, GPIO.FALLING, callback=button_callback, bouncetime=300)
 
     def shiftOut(dPin, cPin, order, val):
         for i in range(0, 8):
