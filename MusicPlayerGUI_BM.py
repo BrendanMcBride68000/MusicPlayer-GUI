@@ -4,6 +4,7 @@
 # Author      : Brendan McBride
 # Date        : 2024/06/06
 ########################################################################
+
 import pygame
 import tkinter as tk
 from tkinter import filedialog, messagebox
@@ -31,7 +32,7 @@ if is_raspberry_pi:
     redPin = 16
     yellowPin = 18
     greenPin = 22
-    buttonPin = 29
+    buttonPin = 29  # Define the pin for the pushbutton
 
     def gpio_setup():
         GPIO.setmode(GPIO.BOARD)
@@ -41,7 +42,7 @@ if is_raspberry_pi:
         GPIO.setup(redPin, GPIO.OUT)
         GPIO.setup(yellowPin, GPIO.OUT)
         GPIO.setup(greenPin, GPIO.OUT)
-        GPIO.setup(buttonPin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(buttonPin, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Set up the button pin as input with a pull-up resistor
 
         # Add event detection for the button press
         GPIO.add_event_detect(buttonPin, GPIO.FALLING, callback=button_callback, bouncetime=300)
@@ -120,17 +121,20 @@ current_file = None
 total_length = 0
 led_running = False
 led_thread = None
+metadata = {}
+current_filename = "None"
 
 def load_music_file():
-    global current_file, total_length
+    global current_file, total_length, metadata, current_filename
     # Load a music file using a file dialog.
     filepath = filedialog.askopenfilename(filetypes=[("Music files(*.mod *.mp3 *.wav *.ogg *.flac *.s3m *.umx *.it *.xm)", "*.mod *.mp3 *.wav *.ogg *.flac *.s3m *.umx *.it *.xm"), ("All files", "*.*")])
     if filepath:
         try:
             pygame.mixer.music.load(filepath)
             current_file = filepath
-            display_metadata(filepath)
+            metadata = display_metadata(filepath)
             total_length = get_music_length(filepath)
+            current_filename = filepath.split('/')[-1]
             #messagebox.showinfo("File Loaded", "Music file loaded successfully!")
         except pygame.error as e:
             messagebox.showerror("Error", f"Could not load music file: {e}")
@@ -200,9 +204,11 @@ def display_metadata(filepath):
             }
         filename_label.config(text=f"File: {filepath.split('/')[-1]}")
         metadata_label.config(text="\n".join(f"{key}: {value}" for key, value in metadata.items()))
+        return metadata
     except Exception as e:
         filename_label.config(text="File: Unknown")
         metadata_label.config(text=f"Could not retrieve metadata: {e}")
+        return {}
 
 def get_music_length(filepath):
     audio = File(filepath)
@@ -215,7 +221,7 @@ def update_time_remaining():
         mins, secs = divmod(remaining_time, 60)
         time_remaining_label.config(text=f"Time Remaining: {mins:02}:{secs:02}")
         root.after(1000, update_time_remaining)
-        
+
 def button_callback(channel):
     pause_music_file()
 
@@ -266,7 +272,13 @@ class MyServer(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        html = '''
+        global metadata, current_filename
+        metadata_html = "<ul>"
+        for key, value in metadata.items():
+            metadata_html += f"<li>{key}: {value}</li>"
+        metadata_html += "</ul>"
+
+        html = f'''
            <html>
            <body style="width:960px; margin: 20px auto;">
            <h1>Welcome to Brendan's exciting Music Player!!!</h1>
@@ -275,6 +287,10 @@ class MyServer(BaseHTTPRequestHandler):
                <input type="submit" name="submit" value="Pause">
                <input type="submit" name="submit" value="Stop">
            </form>
+           <h2>Current File</h2>
+           <p>{current_filename}</p>
+           <h2>Current File Metadata</h2>
+           {metadata_html}
            </body>
            </html>
         '''
@@ -301,6 +317,7 @@ def start_http_server():
     httpd.serve_forever()
 
 if __name__ == "__main__":
+    gpio_setup()
     host_name = 'x.x.x.x'  # Your IPv4 Address goes here
     host_port = 3000
 
