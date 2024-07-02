@@ -13,6 +13,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
 import platform
 import time
+import socket
 
 # Initialize Pygame mixer
 pygame.mixer.init()
@@ -311,10 +312,21 @@ class MyServer(BaseHTTPRequestHandler):
 
         self._redirect('/')
 
+def is_valid_ipv4_address(address):
+    try:
+        socket.inet_pton(socket.AF_INET, address)
+    except socket.error:
+        return False
+    return True
+
 def start_http_server():
-    server_address = (host_name, host_port)
-    httpd = HTTPServer(server_address, MyServer)
-    httpd.serve_forever()
+    if is_valid_ipv4_address(host_name):
+        print("IPv4 Address found. Launching server.")
+        server_address = (host_name, host_port)
+        httpd = HTTPServer(server_address, MyServer)
+        httpd.serve_forever()
+    else:
+        print("IPv4 Address not found. The server will not start.")
 
 if __name__ == "__main__":
     gpio_setup()
